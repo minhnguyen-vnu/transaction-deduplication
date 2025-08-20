@@ -25,3 +25,11 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
       CLUSTER_ID: "q7ObsdL5QXmHbRxN7HSfPA"
+
+  kafkaui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8190:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092

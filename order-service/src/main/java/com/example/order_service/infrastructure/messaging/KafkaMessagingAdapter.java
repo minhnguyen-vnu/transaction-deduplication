@@ -12,7 +12,7 @@ public class KafkaMessagingAdapter implements MessagingPort {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private static final String TOPIC = "order-created";
+    private static final String TOPIC = "requests";
 
     @Override
     public void publishOrderCreatedEvent(String message) {

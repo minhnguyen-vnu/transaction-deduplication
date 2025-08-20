@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
 
   kafka:
@@ -15,3 +15,6 @@ spring:
 
 server:
   port: 3636
+
+shipment:
+  base-url: http://localhost:4953
