@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:latest
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "s3cr3tPass"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "s3cr3tPass", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  dedup-service:
+    build:
+      context: ./dedup-service
+      dockerfile: Dockerfile
+    image: dedup-service:local
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_APPLICATION_NAME: "dedup-service"
+      SERVER_PORT: "8081"
+      DEDUP_STORE: "redis"
+      DEDUP_TTL_SECONDS: "600"
+      DEDUP_CAFFEINE_MAX_ENTRIES: "100000"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_USERNAME: "default"
+      SPRING_DATA_REDIS_PASSWORD: "s3cr3tPass"
+      SPRING_DATA_REDIS_SSL_ENABLED: "false"
+      SPRING_DATA_REDIS_TIMEOUT: "3s"
+      DEDUP_BLOOM_NAME: "dedup:bf:v1"
+      DEDUP_BLOOM_EXPECTED_INSERTIONS: "5000000"
+      DEDUP_BLOOM_FPR: "0.01"
+    restart: unless-stopped
+
+volumes:
+  redis-data:
