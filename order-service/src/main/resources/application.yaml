@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://mysql-hieunguyen.alwaysdata.net:3306/hieunguyen_order_service
+    username: 426940
+    password: 123123a@dedup
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+server:
+  port: 3636
+
+shipment:
+  base-url: http://localhost:4953

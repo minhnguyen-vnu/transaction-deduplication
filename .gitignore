@@ -1,38 +1,92 @@
-target
-*vault.exe*
-dist
-datademo
-.scannerwork
-
-
-HELP.md
+# ========================
+# Java / Spring Boot
+# ========================
+/target/
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**
-!**/src/test/**
+/build/
+/out/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.hprof
+.DS_Store
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
+# IntelliJ IDEA
+.idea/
 *.iws
 *.iml
 *.ipr
+*.iws
+*.hprof
+.DS_Store
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# Eclipse
+.project
+.classpath
+.c9/
+.settings/
+
+# Gradle
+.gradle/
 build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+# Maven
+.mvn/
+!**/src/main/**
+!**/src/test/**
+
+logs/
+*.pid
 
 ### VS Code ###
 .vscode/
+
+# Kubernetes manifests generated
+*.generated.yaml
+*.generated.yml
+*.tmp.yaml
+*.tmp.yml
+*.bak.yaml
+*.bak.yml
+
+# Kustomize build output
+kustomize-build*.yaml
+build/*.yaml
+build/*
+
+# Helm chart templates output
+charts/**/templates/*.yaml
+helm/*.tgz
+helm/.helmignore
+
+# Skaffold generated manifests
+skaffold.yaml
+skaffold-*.yaml
+
+# Local kubeconfigs
+kubeconfig
+.kube/
+
+# Secret files custom / local
+secret*.yaml
+secrets/
+*.secret.yaml
+
+# Minikube specific / local env
+minikube/
+*.local.yaml
+local-*.yaml
+
+# Idea: ignore any overlay manifests under local or dev env
+overlays/local/
+overlays/dev/
+
+# ConfigMap local / dev / generated
+configmap*.yaml
+configmap*.yml
+*config-map*.yaml
+*config-map*.yml
