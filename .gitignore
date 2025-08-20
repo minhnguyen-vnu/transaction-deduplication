@@ -10,9 +10,6 @@ target/
 *.war
 *.ear
 *.log
-*.iml
-*.ipr
-*.iws
 *.hprof
 .DS_Store
 
@@ -21,6 +18,9 @@ target/
 *.iws
 *.iml
 *.ipr
+*.iws
+*.hprof
+.DS_Store
 
 # Eclipse
 .project
@@ -39,8 +39,6 @@ gradle-app.setting
 !**/src/main/**
 !**/src/test/**
 
-# Logs
-*.log
 logs/
 *.pid
 
