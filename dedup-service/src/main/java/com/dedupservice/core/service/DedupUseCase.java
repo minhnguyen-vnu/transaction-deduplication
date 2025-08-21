@@ -3,8 +3,8 @@ package com.dedupservice.core.service;
 import com.dedupservice.core.domain.dto.DedupCheckRequest;
 import com.dedupservice.core.domain.dto.DedupDecision;
 import com.dedupservice.core.port.store.DedupStore;
+import com.dedupservice.core.port.store.IdempotencyStore;
 import com.dedupservice.infrastructure.config.DedupProperties;
-import com.dedupservice.infrastructure.store.RedisBloomIdempotencyStore;
 import com.dedupservice.kernel.utils.KeyUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,11 +14,10 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class DedupUseCase {
 
-
     private final Canonicalizer canonicalizer;
     private final DedupStore store;
     private final DedupProperties props;
-    private final RedisBloomIdempotencyStore redisBloomIdempotencyStore;
+    private final IdempotencyStore idempotencyStore;
 
 
     public DedupDecision check(DedupCheckRequest req) {
@@ -37,9 +36,9 @@ public class DedupUseCase {
 
         String storeKey = KeyUtil.sha256Hex(keyMaterial);
 
-        boolean doesExist = redisBloomIdempotencyStore.isDuplicate(storeKey);
+        boolean doesExist = idempotencyStore.isDuplicate(storeKey);
         if (!doesExist) {
-            redisBloomIdempotencyStore.recordProcessed(storeKey);
+            idempotencyStore.recordProcessed(storeKey);
             return DedupDecision.allow();
         } else {
             boolean ok = store.reserve(storeKey, props.getTtlSeconds());

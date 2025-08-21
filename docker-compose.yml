@@ -2,8 +2,8 @@ version: "3.9"
 
 services:
   redis:
-    image: redis:latest
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "s3cr3tPass"]
+    image: redis/redis-stack-server:latest
+    command: ["redis-server", "--requirepass", "s3cr3tPass"]
     ports:
       - "6379:6379"
     volumes:
@@ -16,32 +16,57 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  dedup-service:
-    build:
-      context: ./dedup-service
-      dockerfile: Dockerfile
-    image: dedup-service:local
-    depends_on:
-      redis:
-        condition: service_healthy
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
     ports:
-      - "8081:8081"
+      - "9092:9092"
     environment:
-      SPRING_APPLICATION_NAME: "dedup-service"
-      SERVER_PORT: "8081"
-      DEDUP_STORE: "redis"
-      DEDUP_TTL_SECONDS: "600"
-      DEDUP_CAFFEINE_MAX_ENTRIES: "100000"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_USERNAME: "default"
-      SPRING_DATA_REDIS_PASSWORD: "s3cr3tPass"
-      SPRING_DATA_REDIS_SSL_ENABLED: "false"
-      SPRING_DATA_REDIS_TIMEOUT: "3s"
-      DEDUP_BLOOM_NAME: "dedup:bf:v1"
-      DEDUP_BLOOM_EXPECTED_INSERTIONS: "5000000"
-      DEDUP_BLOOM_FPR: "0.01"
-    restart: unless-stopped
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "q7ObsdL5QXmHbRxN7HSfPA"
+
+  kafkaui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8190:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+#  dedup-service:
+#    build:
+#      context: ./dedup-service
+#      dockerfile: Dockerfile
+#    image: dedup-service:local
+#    depends_on:
+#      redis:
+#        condition: service_healthy
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      SPRING_APPLICATION_NAME: "dedup-service"
+#      SERVER_PORT: "8081"
+#      DEDUP_STORE: "redis"
+#      DEDUP_TTL_SECONDS: "600"
+#      DEDUP_CAFFEINE_MAX_ENTRIES: "100000"
+#      SPRING_DATA_REDIS_HOST: "redis"
+#      SPRING_DATA_REDIS_PORT: "6379"
+#      SPRING_DATA_REDIS_USERNAME: "default"
+#      SPRING_DATA_REDIS_PASSWORD: "s3cr3tPass"
+#      SPRING_DATA_REDIS_SSL_ENABLED: "false"
+#      SPRING_DATA_REDIS_TIMEOUT: "3s"
+#      DEDUP_BLOOM_NAME: "dedup:bf:v1"
+#      DEDUP_BLOOM_EXPECTED_INSERTIONS: "5000000"
+#      DEDUP_BLOOM_FPR: "0.01"
+#    restart: unless-stopped
 
 volumes:
   redis-data:

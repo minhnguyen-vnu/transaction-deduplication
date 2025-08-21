@@ -15,6 +15,6 @@ public class IntegrationMessageDTO {
     private String method;
     private String endpoint;
     private String idempotentKey;
-    private RequestStatus status;     // sử dụng RequestStatus.name()
-    private Object payload;    // payload có thể là DTO bất kỳ
+    private RequestStatus status;
+    private Object payload;
 }
