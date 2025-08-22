@@ -18,3 +18,9 @@ server:
 
 shipment:
   base-url: http://localhost:4953
+
+dedup:
+  base-url: http://localhost:8081
+  window-ms: 100
+
+logging.level.root: INFO
