@@ -1,6 +1,7 @@
-package com.dedupservice.infrastructure.config;
+package com.dedupservice.infrastructure.factory;
 
 import com.dedupservice.core.port.store.DedupStore;
+import com.dedupservice.infrastructure.config.DedupProperties;
 import com.dedupservice.infrastructure.store.CaffeineDedupStore;
 import com.dedupservice.infrastructure.store.InMemoryDedupStore;
 import com.dedupservice.infrastructure.store.RedisDedupStore;
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Primary;
 
 @Configuration
 @RequiredArgsConstructor
-public class AppConfig {
+public class DedupCacheFactory {
 
 
     private final DedupProperties props;

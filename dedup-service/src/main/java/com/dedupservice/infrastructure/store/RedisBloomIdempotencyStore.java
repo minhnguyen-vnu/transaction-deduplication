@@ -1,5 +1,6 @@
 package com.dedupservice.infrastructure.store;
 
+import com.dedupservice.core.port.store.IdempotencyStore;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBloomFilter;
@@ -12,7 +13,7 @@ import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
-public class RedisBloomIdempotencyStore {
+public class RedisBloomIdempotencyStore implements IdempotencyStore {
     private final RedissonClient redisson;
     private final StringRedisTemplate redis;
 
@@ -38,7 +39,8 @@ public class RedisBloomIdempotencyStore {
 
     public boolean isDuplicate(String idemKey) {
         if (!bloom.contains(idemKey)) return false;
-        return redis.hasKey(idemKey);
+        Boolean exists = redis.hasKey(idemKey);
+        return exists != null && exists;
     }
 
     public void recordProcessed(String idemKey) {

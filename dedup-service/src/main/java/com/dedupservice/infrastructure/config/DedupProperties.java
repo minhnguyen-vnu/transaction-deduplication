@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class DedupProperties {
     private String store = "memory";
     private long ttlSeconds = 600;
-
+    private String idempotent_type = "bloom";
 
     private Caffeine caffeine = new Caffeine();
 

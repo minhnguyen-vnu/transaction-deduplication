@@ -1,7 +1,7 @@
 package com.dedupservice.ui.restful;
 
 import com.dedupservice.core.domain.dto.DedupCheckRequest;
-import com.dedupservice.core.domain.dto.DedupDecision;
+import com.dedupservice.core.domain.dto.DedupResult;
 import com.dedupservice.core.service.DedupUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class DedupController {
     @PostMapping(value = "/dedup-check",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public DedupDecision dedup(@Valid @RequestBody DedupCheckRequest req) {
+    public DedupResult dedup(@Valid @RequestBody DedupCheckRequest req) {
         return useCase.check(req);
     }
 }
