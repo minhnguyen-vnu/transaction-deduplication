@@ -17,5 +17,4 @@ public class MessageDTO {
     private String idempotentKey;
     private RequestStatus status;
     private Object payload;
-
 }

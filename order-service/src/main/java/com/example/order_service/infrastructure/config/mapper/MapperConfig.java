@@ -1,2 +1,13 @@
-package com.example.order_service.infrastructure.config.mapper;public class MapperConfig {
+package com.example.order_service.infrastructure.config.mapper;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class MapperConfig {
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 }
