@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class IntegrationMessageDTO {
+public class MessageDTO {
     private String requestId;
     private String sourceService;
     private String targetService;
@@ -17,4 +17,5 @@ public class IntegrationMessageDTO {
     private String idempotentKey;
     private RequestStatus status;
     private Object payload;
+
 }
