@@ -1,13 +1,13 @@
-package com.dedupservice.core.domain.dto;
+package com.example.order_service.core.domain.dto.dedup;
 
-import com.dedupservice.core.domain.constants.RequestStatus;
+import com.example.order_service.core.domain.constants.RequestStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.antlr.v4.runtime.misc.NotNull;
 
 import java.util.List;
 
@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DedupCheckRequest {
+public class DedupRequest {
     @NotNull
     @JsonProperty("requestPayload")
     private JsonNode requestPayload;
