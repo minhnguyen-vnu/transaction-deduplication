@@ -1,0 +1,358 @@
+package rules;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.List;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+global com.example.config_service.core.port.externalcache.ExternalCacheTemplate cacheStore;
+global AtomicBoolean passed;
+
+// =========================
+// Idempotent fields check
+// =========================
+rule "Check Idempotent Fields"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object rawPayload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        List<?> rawIdempotentFields = (List<?>) $req.getClass().getMethod("getIdempotentFields").invoke($req);
+
+        if (rawPayload != null && rawIdempotentFields != null) {
+            for (Object fObj : rawIdempotentFields) {
+                String fName = fObj.toString();
+                Object fValue = null;
+                if (rawPayload instanceof JsonNode) {
+                    JsonNode node = (JsonNode) rawPayload;
+                    if (node.has(fName)) {
+                        fValue = node.get(fName).asText();
+                    }
+                }
+
+                if (fValue != null) {
+                    String key = "idempotent:" + fName + ":" + fValue;
+                    if (!cacheStore.reserve(key, 60)) {
+                        System.out.println("Duplicate detected for: " + fName + "=" + fValue);
+                        passed.set(false);
+                        System.out.println("passed: " + passed);
+
+                        drools.halt();
+                    }
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Payload check ignoring ignored fields
+// =========================
+rule "Dedup Check Payload Excluding Ignored Fields"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object rawPayload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        List<?> ignoredFields = (List<?>) $req.getClass().getMethod("getIgnoredFields").invoke($req);
+
+        if (rawPayload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) rawPayload;
+
+            // Lọc bỏ ignored fields → build canonical string
+            Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+            Map<String, String> filteredMap = new TreeMap<>();
+
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                if (!ignoredFields.contains(entry.getKey())) {
+                    filteredMap.put(entry.getKey(), entry.getValue().asText());
+                }
+            }
+
+            // Serialize lại payload filtered
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, String> e : filteredMap.entrySet()) {
+                sb.append(e.getKey()).append('=').append(e.getValue()).append(';');
+            }
+
+            // Hash SHA-256 để làm dedup key
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+            String hashHex = Hex.encodeHexString(hash);
+            String key = "dedup:payload:" + hashHex;
+
+            if (!cacheStore.reserve(key, 60)) {
+                System.out.println("Duplicate detected for payload hash=" + hashHex);
+                passed.set(false);
+                drools.halt();
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Dedup Check: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+// =========================
+// Spam check - userId
+// =========================
+rule "Spam Check - userId"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("userId")) {
+                String userId = jsonNode.get("userId").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:user:" + userId + ":" + currentBucket;
+
+                Optional<Object> opt = cacheStore.get(key);
+
+                Long count = 0L;
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 5) {
+                    System.out.println("Spam detected for userId=" + userId
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check userId: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Spam check - userId+amount
+// =========================
+rule "Spam Check - userId+amount"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("userId") && jsonNode.has("amount")) {
+                String userId = jsonNode.get("userId").asText();
+                String amount = jsonNode.get("amount").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:userAmount:" + userId + ":" + amount + ":" + currentBucket;
+
+                Optional<Object> opt = cacheStore.get(key);
+
+                Long count = 0L;
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 3) {
+                    System.out.println("Spam detected for userId+amount=" + userId + "/" + amount
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check userId+amount: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Spam check - deviceId
+// =========================
+rule "Spam Check - deviceId"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("deviceId")) {
+                String deviceId = jsonNode.get("deviceId").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:device:" + deviceId + ":" + currentBucket;
+
+                Long count = 0L;
+                Optional<Object> opt = cacheStore.get(key);
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 5) {
+                    System.out.println("Spam detected for deviceId=" + deviceId
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check deviceId: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Spam check - IP
+// =========================
+rule "Spam Check - IP"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("ip")) {
+                String ip = jsonNode.get("ip").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:ip:" + ip + ":" + currentBucket;
+
+                Long count = 0L;
+                Optional<Object> opt = cacheStore.get(key);
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 10) {
+                    System.out.println("Spam detected for IP=" + ip
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check IP: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Spam check - msisdn
+// =========================
+rule "Spam Check - msisdn"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("msisdn")) {
+                String msisdn = jsonNode.get("msisdn").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:msisdn:" + msisdn + ":" + currentBucket;
+
+                Optional<Object> opt = cacheStore.get(key);
+                Long count = 0L;
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 5) {
+                    System.out.println("Spam detected for msisdn/phone number=" + msisdn
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check msisdn: " + ex.getMessage());
+        passed.set(false);
+    }
+end
+
+// =========================
+// Spam check - imei
+// =========================
+rule "Spam Check - imei"
+dialect "java"
+when
+    $req : Object()
+then
+    try {
+        Object payload = $req.getClass().getMethod("getRequestPayload").invoke($req);
+        if (payload instanceof JsonNode) {
+            JsonNode jsonNode = (JsonNode) payload;
+            if (jsonNode.has("imei")) {
+                String imei = jsonNode.get("imei").asText();
+                long currentBucket = System.currentTimeMillis() / 60000;
+                String key = "spam:imei:" + imei + ":" + currentBucket;
+
+                Optional<Object> opt = cacheStore.get(key);
+                Long count = 0L;
+                if (opt.isPresent() && opt.get() instanceof Number) {
+                    count = ((Number) opt.get()).longValue();
+                }
+
+                count++;
+                cacheStore.put(key, count, 60);
+
+                if (count > 5) {
+                    System.out.println("Spam detected for imei=" + imei
+                                       + " in bucket=" + currentBucket
+                                       + " count=" + count);
+                    passed.set(false);
+                    drools.halt();
+                }
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Error in Spam Check imei: " + ex.getMessage());
+        passed.set(false);
+    }
+
+end
+

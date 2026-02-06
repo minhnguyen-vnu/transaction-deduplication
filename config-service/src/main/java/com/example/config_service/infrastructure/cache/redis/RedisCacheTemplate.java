@@ -1,12 +1,11 @@
-package com.dedupservice.infrastructure.store;
+package com.example.config_service.infrastructure.cache.redis;
 
-import com.dedupservice.core.port.store.DedupStore;
-import com.dedupservice.infrastructure.config.RuleProperties;
+import com.example.config_service.core.port.externalcache.ExternalCacheTemplate;
+import com.example.config_service.infrastructure.config.RuleProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -15,7 +14,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RedisDedupStore implements DedupStore {
+public class RedisCacheTemplate implements ExternalCacheTemplate {
 
     @Qualifier("objectRedisTemplate")
     private final RedisTemplate<String, Object> objectRedisTemplate;

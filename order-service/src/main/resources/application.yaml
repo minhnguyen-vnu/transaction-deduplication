@@ -11,10 +11,10 @@ spring:
     show-sql: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:19092
 
 server:
-  port: 3636
+  port: 37890
 
 shipment:
   base-url: http://localhost:4953

@@ -48,11 +48,12 @@ public class OrderServiceImpl implements OrderService {
         OrderEntity saved = createAndSaveOrder(dto);
 
         // 2. Chuẩn bị idempotent key
-        List<String> idempotentFields = List.of("userId", "amount");
+        List<String> idempotentFields = List.of("requestId");
         List<String> ignoredFields    = List.of("timestamp", "nonce");
         JsonNode payloadNode          = mapper.valueToTree(dto);
 
         String idemKey   = DedupUtil.generateIdempotentKey(payloadNode, idempotentFields, ignoredFields, idempotentWindowMs);
+        log.info("Idempotentkey: {}", idemKey);
         String requestId = UUID.randomUUID().toString();
 
         // 3. Build DedupRequest đầy đủ
@@ -63,7 +64,7 @@ public class OrderServiceImpl implements OrderService {
                 .method("POST")
                 .endpoint("/dedup/check")
                 .requestPayload(payloadNode)
-                .idempotentKey(idemKey)
+                .idempotentKey(null)
                 .idempotentFields(idempotentFields)
                 .ignoredFields(ignoredFields)
                 .build();
@@ -86,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
             shipmentClientPort.createShipment(shipmentDto);
 
             // 6. Publish SUCCESS
-            publishEvent(dedupRequest, RequestStatus.SUCCESS);
+//            publishEvent(dedupRequest, RequestStatus.SUCCESS);
 
         } catch (Exception e) {
             // Publish FAILED
