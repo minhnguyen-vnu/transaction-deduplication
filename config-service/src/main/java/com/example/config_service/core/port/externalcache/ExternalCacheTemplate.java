@@ -1,8 +1,9 @@
-package com.dedupservice.core.port.store;
+package com.example.config_service.core.port.externalcache;
 
 import java.util.Optional;
 
-public interface DedupStore {
+public interface ExternalCacheTemplate {
+
     boolean contains(String key);
 
     <T> Optional<T> get(String key);

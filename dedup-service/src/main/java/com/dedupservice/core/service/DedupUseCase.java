@@ -39,6 +39,7 @@ public class DedupUseCase {
                         req.getIdempotentFields()
                 );
             }
+            log.info("keyMaterial: {}", keyMaterial);
 
             String storeKey = KeyUtil.sha256Hex(keyMaterial);
 
@@ -48,7 +49,7 @@ public class DedupUseCase {
                 idempotencyStore.recordProcessed(storeKey);
 
                 // publish async status PENDING
-                asyncPublish(req);
+//                asyncPublish(req);
 
                 return DedupResult.allow();
             } else {

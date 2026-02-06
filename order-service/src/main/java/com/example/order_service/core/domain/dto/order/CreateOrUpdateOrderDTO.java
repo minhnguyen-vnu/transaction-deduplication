@@ -12,4 +12,5 @@ import java.math.BigDecimal;
 public class CreateOrUpdateOrderDTO {
     private Long userId;
     private BigDecimal amount;
+    private String requestId;
 }
